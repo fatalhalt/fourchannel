@@ -20,7 +20,7 @@ Usage
 ---------
 
 ```
-usage: fourchannel [-h] [--webm] [--watch] [--dryrun] url
+usage: 4channel [-h] [--webm] [--watch] [--dryrun] [--recurse] url
 
 positional arguments:
   url         The url of the thread.
