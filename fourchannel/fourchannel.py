@@ -137,6 +137,9 @@ def download(**kwargs):
     if 'boards.4channel.org' not in kwargs.get('url'):
         sys.exit("you didn't enter a valid 4channel URL")
 
+    if kwargs.get('recurse') is None:
+        kwargs['recurse'] = 0 # handle case when module is imported and .download() is called with just url
+
     split = urllib.parse.urlparse(kwargs.get('url')).path.replace('/', ' ').split()
     board, thread = split[0], split[2]
     url = '%s%s/thread/%s.json' % (URL, board, thread)
