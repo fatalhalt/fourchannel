@@ -20,17 +20,19 @@ Usage
 ---------
 
 ```
-usage: 4channel [-h] [--webm] [--watch] [--dryrun] [--recurse] url
+usage: 4channel.py [-h] [--webm] [--watch] [--dryrun] [-r RECURSE] url [out]
 
 positional arguments:
-  url         The url of the thread.
+  url                   the url of the thread.
+  out                   specify output directory (optional)
 
 optional arguments:
-  -h, --help  show this help message and exit
-  --webm      in addition to images also download webm videos.
-  --watch     If this argument is passed, we will watch the thread for new images.
-  --dryrun    dry run without actually downloading images.
-
+  -h, --help            show this help message and exit
+  --webm                in addition to images also download webm videos.
+  --watch               watch the thread every 60 seconds for new images.
+  --dryrun              dry run without actually downloading images.
+  -r RECURSE, --recurse RECURSE
+                        recursively download images if 1st post contains link to previous thread up to specified depth
 examples:
   python -m fourchannel https://boards.4channel.org/g/thread/76759434#p76759434
 
