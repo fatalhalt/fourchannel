@@ -26,10 +26,12 @@ watching = False
 max_retry = 1
 resorted_to_archive = False
 hit_cloudflare_block = False
+list_of_cloudflare_blocked_media_file = []
 
 def fuuka_retrieve(result, board, thread, dryrun):
     i = 0
     global hit_cloudflare_block
+    global list_of_cloudflare_blocked_media_file
     for post in result[thread]['posts']:
         if result[thread]['posts'][post]['media'] is None:
             continue
@@ -48,20 +50,20 @@ def fuuka_retrieve(result, board, thread, dryrun):
                     response = urllib.request.urlopen(req)
                     with open(filename, "wb") as file:
                       file.write(response.read())
+                      i = i+1
                   except urllib.error.HTTPError as e:
                       if e.code in [503] and e.hdrs['Server'] == 'cloudflare':
                         hit_cloudflare_block = True
                         print(f"hit cloudflare block: {e}")
                 else:
                     print(f"cloudflare block, download {url_warosu} manually in the browser")
-
-                i = i+1
+                    list_of_cloudflare_blocked_media_file.append(url_warosu)
             else:
                 print(f"skipping {filename}, dryrun")
         else:
             if not watching:
                 print(f"skipping {filename}, already present")
-    print(f"downloaded {i} files from {url_warosu}")
+    print(f"downloaded {i} files from https://i.warosu.org/ thread# {thread}")
 
 
 # loops through posts of given thread and downloads media files
@@ -99,12 +101,24 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
         result = json.loads(response.read())
         if recurse > 0:
           try:
-            prev_thread_path = re.search(r'^.*Previous thread.*href="([^"]+)".*$', result['posts'][0]['com']).group(1)
-            split = urllib.parse.urlparse('https://boards.4channel.org' + prev_thread_path).path.replace('/', ' ').split()
-            newurl = '%s%s/thread/%s.json' % (URL, split[0], split[2])
-            print(f"recursing to {prev_thread_path}")
-            load_thread_json(board, split[2], newurl, recurse-1, dryrun)
+            op_comment = ''
+            if archive_url_is_being_used_for_this_stack_frame_so_call_fuuka is True:
+              # for json from fuuka the tread# to previous thread is in slightly different place
+              op_comment = result[thread]['op']['comment']
+              #prev_thread_num = re.search(r'.*Previous thread:\s*>>(\d{8}).*', op_comment).group(1)
+              prev_thread_num = re.search(r'.*Previous thread:\s*.*(\d{8}).*', op_comment).group(1)
+              newurl = '%s=%s&num=%s' % ('https://archived.moe/_/api/chan/thread?board', board, prev_thread_num)
+              print(f"recursing to archive thread# {prev_thread_num} at {newurl}")
+              load_thread_json(board, prev_thread_num, newurl, recurse-1, dryrun)
+            else:
+              op_comment = result['posts'][0]['com']
+              prev_thread_path = re.search(r'^.*Previous thread.*href="([^"]+)".*$', op_comment).group(1)
+              split = urllib.parse.urlparse('https://boards.4channel.org' + prev_thread_path).path.replace('/', ' ').split()
+              newurl = '%s%s/thread/%s.json' % (URL, split[0], split[2])
+              print(f"recursing to {prev_thread_path}")
+              load_thread_json(board, split[2], newurl, recurse-1, dryrun)
           except AttributeError:
+              print(f"did not find a link to previous thread. the comment was:\n---\n{op_comment}\n---")
               pass
 
         if archive_url_is_being_used_for_this_stack_frame_so_call_fuuka is True:
@@ -169,6 +183,9 @@ def download(**kwargs):
       print(f"downloading /{board}/{thread}")
       load_thread_json(board, thread, url, kwargs.get('recurse'), kwargs.get('dryrun'))
     
+    if hit_cloudflare_block:
+      with open('_cloudflare_blocked_files.txt', "w") as f:
+        print(*list_of_cloudflare_blocked_media_file, sep="\n", file=f)
     os.chdir("..")
 
 
