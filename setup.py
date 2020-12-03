@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 setuptools.setup(
     name="4channel",
     packages=["fourchannel"],
-    version="0.0.4",
+    version="0.0.5",
     description="A python3 tool and module to download all images/webm from a 4channel thread.",
     long_description=long_description,
     long_description_content_type="text/markdown",
