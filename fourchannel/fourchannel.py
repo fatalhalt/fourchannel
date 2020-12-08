@@ -6,11 +6,6 @@ import time
 import signal
 import re
 
-# wishlist
-#
-# - get thread number of latest jav or gravure
-# - use threads to download in parallel
-
 
 """
   notes:
@@ -81,9 +76,9 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
     except urllib.error.HTTPError as e:
       if e.code in [404]:
           if not resorted_to_archive:
-            print(f"url {url} returned 404, resorting to https://archived.moe/")
             resorted_to_archive = True
             newurl = '%s=%s&num=%s' % ('https://archived.moe/_/api/chan/thread?board', board, thread)
+            print(f"url {url} returned 404, resorting to {newurl}")
             load_thread_json(board, thread, newurl, recurse-1, dryrun)
           else:
             global max_retry
@@ -99,20 +94,29 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
 
     try:
         result = json.loads(response.read())
+        op_subject = ''
+        op_post_time = ''
         if recurse > 0:
           try:
             op_comment = ''
             if archive_url_is_being_used_for_this_stack_frame_so_call_fuuka is True:
               # for json from fuuka the tread# to previous thread is in slightly different place
               op_comment = result[thread]['op']['comment']
+              op_subject = result[thread]['op']['title']
+              op_post_time = result[thread]['op']['fourchan_date']
               #prev_thread_num = re.search(r'.*Previous thread:\s*>>(\d{8}).*', op_comment).group(1)
-              prev_thread_num = re.search(r'.*Previous thread:\s*.*(\d{8}).*', op_comment).group(1)
+              #prev_thread_num = re.search(r'.*[pP]revious [tT]hread:\s*.*?(\d{8}).*', op_comment).group(1)
+              prev_thread_num = re.search(r'.*[pP]revious:? (?:[tT]hread:)?\s*.*?(\d{8}).*', op_comment).group(1)
               newurl = '%s=%s&num=%s' % ('https://archived.moe/_/api/chan/thread?board', board, prev_thread_num)
               print(f"recursing to archive thread# {prev_thread_num} at {newurl}")
               load_thread_json(board, prev_thread_num, newurl, recurse-1, dryrun)
             else:
               op_comment = result['posts'][0]['com']
-              prev_thread_path = re.search(r'^.*Previous thread.*href="([^"]+)".*$', op_comment).group(1)
+              op_subject = result['posts'][0]['sub']
+              op_post_time = result['posts'][0]['now']
+              #prev_thread_path = re.search(r'^.*[pP]revious [tT]hread.*href="([^"]+)".*$', op_comment).group(1)
+              prev_thread_num = re.search(r'.*[pP]revious [tT]hread:\s*.*?(\d{8}).*', op_comment).group(1)
+              prev_thread_path = '/' + board + '/thread/' + prev_thread_num
               split = urllib.parse.urlparse('https://boards.4channel.org' + prev_thread_path).path.replace('/', ' ').split()
               newurl = '%s%s/thread/%s.json' % (URL, split[0], split[2])
               print(f"recursing to {prev_thread_path}")
@@ -125,13 +129,15 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
           fuuka_retrieve(result, board, thread, dryrun)
         else:
             i = 0
+            total_bytes_dw = 0
             for post in result['posts']:
                 try:
                     filename = str(post['tim']) + post['ext']
                     if post['ext'] in allowed_types and not os.path.exists(filename):
                         if not dryrun:
                             print(f"downloading {filename}")
-                            urllib.request.urlretrieve(IMAGE_URL + board + '/' + filename, filename)
+                            fn, headers = urllib.request.urlretrieve(IMAGE_URL + board + '/' + filename, filename)
+                            total_bytes_dw = total_bytes_dw + int(headers['Content-Length'])
                             i = i+1
                         else:
                             print(f"skipping {filename}, dryrun")
@@ -140,7 +146,7 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
                             print(f"skipping {filename}, already present")
                 except KeyError:
                     continue
-            print(f"downloaded {i} files from {url}")
+            print(f"downloaded {'%.*f%s' % (2, total_bytes_dw / (1<<20), 'MB')} of {i} files from {url} ({op_subject}) ({op_post_time})")
     except ValueError:
         sys.exit('no response, thread deleted?')
 
