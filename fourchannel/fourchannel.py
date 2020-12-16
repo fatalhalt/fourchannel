@@ -112,7 +112,7 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
               load_thread_json(board, prev_thread_num, newurl, recurse-1, dryrun)
             else:
               op_comment = result['posts'][0]['com']
-              op_subject = result['posts'][0]['sub']
+              op_subject = result['posts'][0]['sub'] if result['posts'][0].key('sub') is not None else 'No title'
               op_post_time = result['posts'][0]['now']
               #prev_thread_path = re.search(r'^.*[pP]revious [tT]hread.*href="([^"]+)".*$', op_comment).group(1)
               prev_thread_num = re.search(r'.*[pP]revious [tT]hread:\s*.*?(\d{8}).*', op_comment).group(1)
