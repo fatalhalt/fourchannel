@@ -115,7 +115,8 @@ def load_thread_json(board, thread, url, recurse, dryrun=False):
               op_subject = result['posts'][0]['sub'] if result['posts'][0].get('sub') is not None else 'No title'
               op_post_time = result['posts'][0]['now']
               #prev_thread_path = re.search(r'^.*[pP]revious [tT]hread.*href="([^"]+)".*$', op_comment).group(1)
-              prev_thread_num = re.search(r'.*[pP]revious [tT]hread:\s*.*?(\d{8}).*', op_comment).group(1)
+              #prev_thread_num = re.search(r'.*[pP]revious [tT]hread:\s*.*?(\d{8}).*', op_comment).group(1)
+              prev_thread_num = re.search(r'.*[pP]revious:? (?:[tT]hread:)?\s*.*?(\d{8}).*', op_comment).group(1)
               prev_thread_path = '/' + board + '/thread/' + prev_thread_num
               split = urllib.parse.urlparse('https://boards.4channel.org' + prev_thread_path).path.replace('/', ' ').split()
               newurl = '%s%s/thread/%s.json' % (URL, split[0], split[2])

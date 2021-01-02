@@ -20,7 +20,7 @@ Usage
 ---------
 
 ```
-usage: 4channel.py [-h] [--webm] [--watch] [--dryrun] [-r RECURSE] url [out]
+usage: 4channel [-h] [--webm] [--watch] [--dryrun] [-r RECURSE] url [out]
 
 positional arguments:
   url                   the url of the thread.
